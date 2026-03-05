@@ -2,7 +2,6 @@ package get
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"slices"
 	"strings"
@@ -13,7 +12,8 @@ func BinaryDeps(ctx context.Context, binPath string) ([]string, error) {
 
 	output, err := exec.CommandContext(ctx, "ldd", binPath).Output()
 	if err != nil {
-		return nil, fmt.Errorf("exec ldd: %w", err)
+		// assume static binary, so skip
+		return nil, nil
 	}
 
 	var deps []string

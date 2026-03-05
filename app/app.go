@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/cnaize/landbox"
-	"github.com/cnaize/landlook/lib/get"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v3"
+
+	"github.com/cnaize/landlook/lib/get"
 )
 
 const (
@@ -68,7 +69,7 @@ func (a *App) RunLoop(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool(AppFlagAddDeps) {
 		deps, err := get.BinaryDeps(ctx, binPath)
 		if err != nil {
-			return fmt.Errorf("get bin deps: %w", err)
+			return fmt.Errorf("get binary deps: %w", err)
 		}
 
 		a.state.AddROPaths(deps...)
