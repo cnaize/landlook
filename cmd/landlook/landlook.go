@@ -20,9 +20,15 @@ func main() {
 
 	cli := &cli.Command{
 		Name:      "landlook",
-		Usage:     "check command before run",
+		Usage:     "secure command inspection tool",
 		ArgsUsage: "command [arguments]",
 		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        app.AppFlagLogLevel,
+				Usage:       "set zerolog level",
+				Value:       "info",
+				DefaultText: "info",
+			},
 			&cli.StringFlag{
 				Name:        app.AppFlagROPaths,
 				Usage:       "allow to read/exec path",
@@ -61,7 +67,7 @@ func main() {
 				Name:        app.AppFlagAddEnvs,
 				Aliases:     []string{"e"},
 				Usage:       "add environment variables",
-				DefaultText: "false",
+				DefaultText: "empty list",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAddSelf,
@@ -77,7 +83,7 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return app.NewApp(logger).RunLoop(ctx, cmd)
+			return app.NewApp(logger).Run(ctx, cmd)
 		},
 	}
 

@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	AppFlagLogLevel    = "log-level"
 	AppFlagROPaths     = "ro"
 	AppFlagRWPaths     = "rw"
 	AppFlagTCPListen   = "tcp-listen"
@@ -37,12 +38,22 @@ func NewApp(logger zerolog.Logger) *App {
 	}
 }
 
-func (a *App) RunLoop(ctx context.Context, cmd *cli.Command) error {
+func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
+	// set log level
+	logLevel, err := zerolog.ParseLevel(cmd.String(AppFlagLogLevel))
+	if err != nil {
+		a.logger.Warn().Str(AppFlagLogLevel, cmd.String(AppFlagLogLevel)).Msg(`invalid log level, setting to "debug"`)
+		logLevel = zerolog.DebugLevel
+	}
+	a.logger = a.logger.Level(logLevel)
+
+	// check app args
 	args := cmd.Args().Slice()
 	if len(args) < 1 {
 		return fmt.Errorf("missing command to run")
 	}
 
+	// get binary path
 	binPath, err := exec.LookPath(args[0])
 	if err != nil {
 		return fmt.Errorf("find binary: %w", err)
@@ -60,6 +71,9 @@ func (a *App) RunLoop(ctx context.Context, cmd *cli.Command) error {
 		EnableDebug: true,
 	}
 
+	// add envs
+	a.state.AddEnvVars(cmd.StringSlice(AppFlagAddEnvs)...)
+
 	// add self
 	if cmd.Bool(AppFlagAddSelf) {
 		a.state.AddROPaths(binPath)
@@ -69,10 +83,10 @@ func (a *App) RunLoop(ctx context.Context, cmd *cli.Command) error {
 	if cmd.Bool(AppFlagAddDeps) {
 		deps, err := get.BinaryDeps(ctx, binPath)
 		if err != nil {
-			return fmt.Errorf("get binary deps: %w", err)
+			a.logger.Warn().Err(err).Msg("failed to add deps")
+		} else {
+			a.state.AddROPaths(deps...)
 		}
-
-		a.state.AddROPaths(deps...)
 	}
 
 	return a.run(ctx, a.state)
@@ -82,7 +96,15 @@ func (a *App) run(ctx context.Context, state *State) error {
 	sandbox := landbox.NewSandbox(state.ROPaths, state.RWPaths, &state.Options)
 	defer sandbox.Close()
 
-	output, _ := sandbox.CommandContext(ctx, state.Command[0], state.Command[1:]...).CombinedOutput()
+	// create command
+	cmd := sandbox.CommandContext(ctx, state.Command[0], state.Command[1:]...)
+	cmd.Env = append(cmd.Env, a.state.EnvVars...)
+
+	// print debug
+	a.logger.Debug().Strs("cmd", cmd.Args[1:]).Strs("env", cmd.Env).Msg("run command")
+
+	// run command
+	output, _ := cmd.CombinedOutput()
 	a.logger.Info().Msg(string(output))
 
 	return nil

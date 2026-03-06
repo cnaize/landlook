@@ -2,6 +2,7 @@ package get
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"slices"
 	"strings"
@@ -10,10 +11,9 @@ import (
 func BinaryDeps(ctx context.Context, binPath string) ([]string, error) {
 	var skipList = []string{"vdso"}
 
-	output, err := exec.CommandContext(ctx, "ldd", binPath).Output()
+	output, err := exec.CommandContext(ctx, "ldd", binPath).CombinedOutput()
 	if err != nil {
-		// assume static binary, so skip
-		return nil, nil
+		return nil, fmt.Errorf("ldd binary: %s", output)
 	}
 
 	var deps []string

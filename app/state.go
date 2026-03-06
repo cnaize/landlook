@@ -2,6 +2,7 @@ package app
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/cnaize/landbox"
 )
@@ -11,6 +12,7 @@ type State struct {
 	ROPaths landbox.Paths
 	RWPaths landbox.Paths
 	Options landbox.Options
+	EnvVars []string
 }
 
 func NewState() *State {
@@ -39,6 +41,20 @@ func (s *State) AddRWPaths(paths ...string) {
 			}
 
 			if !yield(path) {
+				return
+			}
+		}
+	})
+}
+
+func (s *State) AddEnvVars(envs ...string) {
+	s.EnvVars = slices.AppendSeq(s.EnvVars, func(yield func(string) bool) {
+		for _, env := range envs {
+			if !strings.Contains(env, "=") {
+				continue
+			}
+
+			if !yield(env) {
 				return
 			}
 		}
