@@ -24,9 +24,9 @@ func NewMenuItem(allow bool, event *aucoalesce.Event) *MenuItem {
 func (i *MenuItem) Title() string {
 	if i.allow {
 		return "[ALLOW]"
-	} else {
-		return "[DENY]"
 	}
+
+	return "[DENY]"
 }
 
 func (i *MenuItem) Description() string {
@@ -35,5 +35,5 @@ func (i *MenuItem) Description() string {
 }
 
 func (i *MenuItem) FilterValue() string {
-	return helper.FormatEventMenu(i.event)
+	return i.Title() + i.Description()
 }

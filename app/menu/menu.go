@@ -36,8 +36,12 @@ func (m *Menu) Init() tea.Cmd {
 func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		if msg.String() == "q" {
-			return m, tea.Quit
+		switch msg.String() {
+		case "space":
+			item := m.list.SelectedItem().(*MenuItem)
+			item.allow = !item.allow
+		case "ctrl+c":
+			return m, tea.Interrupt
 		}
 	case tea.WindowSizeMsg:
 		m.list.SetSize(msg.Width, msg.Height)
