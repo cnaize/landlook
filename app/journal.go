@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -25,7 +26,7 @@ func NewJournal(logger zerolog.Logger) *Journal {
 	}
 }
 
-func (a *Journal) Start(ctx context.Context) error {
+func (j *Journal) Start(ctx context.Context) error {
 	// create client
 	client, err := libaudit.NewMulticastAuditClient(nil)
 	if err != nil {
@@ -40,7 +41,7 @@ func (a *Journal) Start(ctx context.Context) error {
 	}
 
 	// create reassembler
-	a.reasmr, err = libaudit.NewReassembler(0x20, 3*time.Second, a)
+	j.reasmr, err = libaudit.NewReassembler(0x20, 3*time.Second, j)
 	if err != nil {
 		return fmt.Errorf("new reassembler: %w", err)
 	}
@@ -55,7 +56,7 @@ func (a *Journal) Start(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if a.reasmr.Maintain() != nil {
+				if j.reasmr.Maintain() != nil {
 					return
 				}
 			default:
@@ -65,19 +66,14 @@ func (a *Journal) Start(ctx context.Context) error {
 					return
 				}
 
-				// filter message
-				if raw.Type < 1420 || raw.Type > 1425 {
-					continue
-				}
-
 				// parse message
 				msg, err := auparse.Parse(raw.Type, string(raw.Data))
 				if err != nil {
 					continue
 				}
 
-				// save message
-				a.reasmr.PushMessage(msg)
+				// push message
+				j.reasmr.PushMessage(msg)
 			}
 		}
 	}()
@@ -85,16 +81,16 @@ func (a *Journal) Start(ctx context.Context) error {
 	return nil
 }
 
-func (a *Journal) Stop() error {
+func (j *Journal) Stop() error {
 	var errs error
-	if a.client != nil {
-		if err := a.client.Close(); err != nil {
+	if j.client != nil {
+		if err := j.client.Close(); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("close client: %w", err))
 		}
 	}
 
-	if a.reasmr != nil {
-		if err := a.reasmr.Close(); err != nil {
+	if j.reasmr != nil {
+		if err := j.reasmr.Close(); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("close reassembler: %w", err))
 		}
 	}
@@ -102,19 +98,38 @@ func (a *Journal) Stop() error {
 	return errs
 }
 
-func (a *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
+func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
+	// make event
 	event, err := aucoalesce.CoalesceMessages(msgs)
 	if err != nil {
-		a.logger.Debug().Msgf("coalesce messages: %s", err.Error())
+		j.logger.Err(err).Msg("failed to coalesce messages")
 		return
 	}
 
+	// clean event
 	aucoalesce.ResolveIDs(event)
-	a.events = append(a.events, event)
+	event = CleanEvent(event)
 
-	a.logger.Info().Str("path", event.Data["path"]).Msg("new event")
+	// print debug
+	if j.logger.GetLevel() == zerolog.DebugLevel {
+		data, err := json.Marshal(event)
+		if err != nil {
+			j.logger.Err(err).Msg("failed to marshal event")
+			return
+		}
+		j.logger.Debug().RawJSON("event", data).Msg("new event")
+	}
+
+	// filter event
+	if event.Type < 1420 || event.Type > 1425 || event.Data["exit"] != "EACCES" {
+		return
+	}
+
+	// save event
+	j.events = append(j.events, event)
+	j.logger.Info().Msg(FormatEvent(event))
 }
 
-func (a *Journal) EventsLost(count int) {
-	a.logger.Warn().Int("count", count).Msg("events lost")
+func (j *Journal) EventsLost(count int) {
+	j.logger.Warn().Int("count", count).Msg("events lost")
 }
