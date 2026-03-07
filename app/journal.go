@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/elastic/go-libaudit/v2"
@@ -17,6 +19,8 @@ type Journal struct {
 	logger zerolog.Logger
 	client *libaudit.AuditClient
 	reasmr *libaudit.Reassembler
+
+	domain string
 	events []*aucoalesce.Event
 }
 
@@ -35,13 +39,18 @@ func (j *Journal) Start(ctx context.Context) error {
 			return fmt.Errorf("new client: %w", err)
 		}
 
+		if err := client.SetEnabled(true, libaudit.WaitForReply); err != nil {
+			return fmt.Errorf("set enabled: %w", err)
+		}
+
 		if err := client.SetPID(libaudit.WaitForReply); err != nil {
 			return fmt.Errorf("set pid: %w", err)
 		}
 	}
+	j.client = client
 
 	// create reassembler
-	j.reasmr, err = libaudit.NewReassembler(0x20, 3*time.Second, j)
+	j.reasmr, err = libaudit.NewReassembler(32, 3*time.Second, j)
 	if err != nil {
 		return fmt.Errorf("new reassembler: %w", err)
 	}
@@ -108,7 +117,17 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 
 	// clean event
 	aucoalesce.ResolveIDs(event)
-	event = CleanEvent(event)
+	CleanEvent(event)
+
+	// find domain
+	if j.domain == "" && event.Process.PPID == strconv.Itoa(os.Getpid()) {
+		j.domain = event.Data["domain"]
+	}
+
+	// filter event
+	if j.domain == "" || event.Data["domain"] != j.domain || event.Data["exit"] != "EACCES" {
+		return
+	}
 
 	// print debug
 	if j.logger.GetLevel() == zerolog.DebugLevel {
@@ -118,11 +137,6 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 			return
 		}
 		j.logger.Debug().RawJSON("event", data).Msg("new event")
-	}
-
-	// filter event
-	if event.Type < 1420 || event.Type > 1425 || event.Data["exit"] != "EACCES" {
-		return
 	}
 
 	// save event

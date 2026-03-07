@@ -23,7 +23,7 @@ func NewState() *State {
 func (s *State) AddROPaths(paths ...string) {
 	s.ROPaths = slices.AppendSeq(s.ROPaths, func(yield func(string) bool) {
 		for _, path := range paths {
-			if len(path) < 1 {
+			if path == "" {
 				continue
 			}
 
@@ -37,7 +37,7 @@ func (s *State) AddROPaths(paths ...string) {
 func (s *State) AddRWPaths(paths ...string) {
 	s.RWPaths = slices.AppendSeq(s.RWPaths, func(yield func(string) bool) {
 		for _, path := range paths {
-			if len(path) < 1 {
+			if path == "" {
 				continue
 			}
 

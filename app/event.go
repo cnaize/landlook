@@ -25,8 +25,6 @@ func FormatEvent(event *aucoalesce.Event) string {
 		event.Process.Exe, event.Process.PID, action, path, blockers)
 }
 
-func CleanEvent(event *aucoalesce.Event) *aucoalesce.Event {
+func CleanEvent(event *aucoalesce.Event) {
 	event.Warnings = nil
-
-	return event
 }
