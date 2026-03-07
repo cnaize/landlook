@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 
-	"github.com/elastic/go-libaudit/aucoalesce"
+	"github.com/elastic/go-libaudit/v2/aucoalesce"
 )
 
 func FormatEvent(event *aucoalesce.Event) string {
