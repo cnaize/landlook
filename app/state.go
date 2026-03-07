@@ -13,6 +13,7 @@ type State struct {
 	RWPaths landbox.Paths
 	Options landbox.Options
 	EnvVars []string
+	Journal *Journal
 }
 
 func NewState() *State {

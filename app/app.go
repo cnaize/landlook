@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/cnaize/landbox"
 	"github.com/rs/zerolog"
@@ -103,9 +104,20 @@ func (a *App) run(ctx context.Context, state *State) error {
 	// print debug
 	a.logger.Debug().Strs("cmd", cmd.Args[1:]).Strs("env", cmd.Env).Msg("run command")
 
+	// start journaling
+	state.Journal = NewJournal(a.logger)
+	defer state.Journal.Stop()
+
+	if err := state.Journal.Start(ctx); err != nil {
+		return fmt.Errorf("journal start: %w", err)
+	}
+
 	// run command
 	output, _ := cmd.CombinedOutput()
 	a.logger.Info().Msg(string(output))
+
+	// wait a bit
+	time.Sleep(time.Second)
 
 	return nil
 }

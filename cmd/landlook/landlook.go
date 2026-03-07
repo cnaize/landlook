@@ -20,7 +20,7 @@ func main() {
 
 	cli := &cli.Command{
 		Name:      "landlook",
-		Usage:     "secure command inspection tool",
+		Usage:     "command inspection tool",
 		ArgsUsage: "command [arguments]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -97,6 +97,6 @@ func main() {
 	<-m.Done()
 
 	for _, err := range m.Errors() {
-		logger.Err(err).Msg("failed to run")
+		logger.Err(err).Msg("failed to run app")
 	}
 }
