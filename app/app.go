@@ -7,10 +7,13 @@ import (
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/cnaize/landbox"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v3"
 
+	"github.com/cnaize/landlook/app/journal"
+	"github.com/cnaize/landlook/app/menu"
 	"github.com/cnaize/landlook/lib/get"
 )
 
@@ -90,7 +93,22 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	return a.run(ctx, a.state)
+	return a.runLoop(ctx, a.state)
+}
+
+func (a *App) runLoop(ctx context.Context, state *State) error {
+	for {
+		// run command
+		if err := a.run(ctx, state); err != nil {
+			return fmt.Errorf("run: %w", err)
+		}
+
+		// show menu
+		menu := menu.NewMenu(state.Journal.GetEvents())
+		if _, err := tea.NewProgram(menu).Run(); err != nil {
+			return fmt.Errorf("menu: %w", err)
+		}
+	}
 }
 
 func (a *App) run(ctx context.Context, state *State) error {
@@ -105,7 +123,7 @@ func (a *App) run(ctx context.Context, state *State) error {
 	a.logger.Debug().Strs("cmd", cmd.Args[1:]).Strs("env", cmd.Env).Msg("run command")
 
 	// start journaling
-	state.Journal = NewJournal(a.logger)
+	state.Journal = journal.NewJournal(a.logger)
 	defer state.Journal.Stop()
 
 	if err := state.Journal.Start(ctx); err != nil {

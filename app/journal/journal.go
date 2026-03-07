@@ -1,4 +1,4 @@
-package app
+package journal
 
 import (
 	"context"
@@ -13,13 +13,16 @@ import (
 	"github.com/elastic/go-libaudit/v2/aucoalesce"
 	"github.com/elastic/go-libaudit/v2/auparse"
 	"github.com/rs/zerolog"
+
+	"github.com/cnaize/landlook/app/helper"
 )
+
+var _ libaudit.Stream = (*Journal)(nil)
 
 type Journal struct {
 	logger zerolog.Logger
 	client *libaudit.AuditClient
 	reasmr *libaudit.Reassembler
-
 	domain string
 	events []*aucoalesce.Event
 }
@@ -107,6 +110,10 @@ func (j *Journal) Stop() error {
 	return errs
 }
 
+func (j *Journal) GetEvents() []*aucoalesce.Event {
+	return j.events
+}
+
 func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 	// make event
 	event, err := aucoalesce.CoalesceMessages(msgs)
@@ -117,7 +124,7 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 
 	// clean event
 	aucoalesce.ResolveIDs(event)
-	CleanEvent(event)
+	helper.CleanEvent(event)
 
 	// find domain
 	if j.domain == "" && event.Process.PPID == strconv.Itoa(os.Getpid()) {
@@ -134,14 +141,14 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 		data, err := json.Marshal(event)
 		if err != nil {
 			j.logger.Err(err).Msg("failed to marshal event")
-			return
+		} else {
+			j.logger.Debug().RawJSON("event", data).Msg("new event")
 		}
-		j.logger.Debug().RawJSON("event", data).Msg("new event")
 	}
 
 	// save event
 	j.events = append(j.events, event)
-	j.logger.Info().Msg(FormatEvent(event))
+	j.logger.Info().Msg(helper.FormatEvent(event))
 }
 
 func (j *Journal) EventsLost(count int) {

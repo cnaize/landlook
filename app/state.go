@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/cnaize/landbox"
+	"github.com/cnaize/landlook/app/journal"
 )
 
 type State struct {
@@ -13,7 +14,7 @@ type State struct {
 	RWPaths landbox.Paths
 	Options landbox.Options
 	EnvVars []string
-	Journal *Journal
+	Journal *journal.Journal
 }
 
 func NewState() *State {

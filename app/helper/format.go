@@ -1,4 +1,4 @@
-package app
+package helper
 
 import (
 	"fmt"
@@ -25,6 +25,7 @@ func FormatEvent(event *aucoalesce.Event) string {
 		event.Process.Exe, event.Process.PID, action, path, blockers)
 }
 
-func CleanEvent(event *aucoalesce.Event) {
-	event.Warnings = nil
+func FormatEventMenu(event *aucoalesce.Event) string {
+	// TODO: IMPLEMENT!!!
+	return FormatEvent(event)
 }
