@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -17,7 +16,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/cnaize/landlook/app/journal"
-	"github.com/cnaize/landlook/app/menu"
+	"github.com/cnaize/landlook/app/ui"
 	"github.com/cnaize/landlook/lib/get"
 )
 
@@ -52,6 +51,11 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		logLevel = zerolog.DebugLevel
 	}
 	a.logger = a.logger.Level(logLevel)
+
+	// check sudo
+	if os.Getenv("SUDO_UID") == "" || os.Getenv("SUDO_GID") == "" {
+		return fmt.Errorf("empty SUDO_UID/SUDO_GID, did you forget sudo?")
+	}
 
 	// check app args
 	args := cmd.Args().Slice()
@@ -103,22 +107,23 @@ func (a *App) runLoop(ctx context.Context, state *State) error {
 	for {
 		// run command
 		if err := a.run(ctx, state); err != nil {
-			return fmt.Errorf("run: %w", err)
+			return fmt.Errorf("run command: %w", err)
 		}
 
-		// press button
-		fmt.Printf("\nPress [Enter] to continue")
-		bufio.NewReader(os.Stdin).ReadByte()
+		// show dialog
+		if _, err := tea.NewProgram(ui.NewDialog()).Run(); err != nil {
+			return fmt.Errorf("run dialog: %w", err)
+		}
 
 		// show menu
-		m := menu.NewMenu(state.Journal.GetEvents())
-		if _, err := tea.NewProgram(m).Run(); err != nil {
-			return fmt.Errorf("menu: %w", err)
+		menu := ui.NewMenu(state.Journal.GetEvents())
+		if _, err := tea.NewProgram(menu).Run(); err != nil {
+			return fmt.Errorf("run menu: %w", err)
 		}
 
 		// handle state
-		for _, item := range m.List.Items() {
-			item := item.(*menu.MenuItem)
+		for _, item := range menu.List.Items() {
+			item := item.(*ui.MenuItem)
 			if !item.Allow {
 				continue
 			}
@@ -142,11 +147,11 @@ func (a *App) run(ctx context.Context, state *State) error {
 	// switch user
 	uid, err := strconv.Atoi(os.Getenv("SUDO_UID"))
 	if err != nil {
-		return fmt.Errorf("parse SUDO_UID env: %w", err)
+		return fmt.Errorf("parse SUDO_UID: %w", err)
 	}
 	gid, err := strconv.Atoi(os.Getenv("SUDO_GID"))
 	if err != nil {
-		return fmt.Errorf("parse SUDO_GID env: %w", err)
+		return fmt.Errorf("parse SUDO_GID: %w", err)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},

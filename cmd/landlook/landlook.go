@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/appleboy/graceful"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v3"
@@ -97,6 +99,8 @@ func main() {
 	<-m.Done()
 
 	for _, err := range m.Errors() {
-		logger.Err(err).Msg("failed to run app")
+		if !errors.Is(err, tea.ErrInterrupted) {
+			logger.Err(err).Msg("failed to run app")
+		}
 	}
 }
