@@ -1,10 +1,14 @@
 package app
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -31,13 +35,11 @@ const (
 )
 
 type App struct {
-	state  *State
 	logger zerolog.Logger
 }
 
 func NewApp(logger zerolog.Logger) *App {
 	return &App{
-		state:  NewState(),
 		logger: logger,
 	}
 }
@@ -64,10 +66,11 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// fill state
-	a.state.Command = args
-	a.state.AddROPaths(strings.Split(cmd.String(AppFlagROPaths), ":")...)
-	a.state.AddRWPaths(strings.Split(cmd.String(AppFlagRWPaths), ":")...)
-	a.state.Options = landbox.Options{
+	state := NewState()
+	state.Command = args
+	state.AddROPaths(strings.Split(cmd.String(AppFlagROPaths), ":")...)
+	state.AddRWPaths(strings.Split(cmd.String(AppFlagRWPaths), ":")...)
+	state.Options = landbox.Options{
 		TCPListen:   cmd.Uint16Slice(AppFlagTCPListen),
 		TCPConnect:  cmd.Uint16Slice(AppFlagTCPConnect),
 		DenySockets: cmd.Bool(AppFlagDenySockets),
@@ -76,11 +79,11 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	// add envs
-	a.state.AddEnvVars(cmd.StringSlice(AppFlagAddEnvs)...)
+	state.AddEnvVars(cmd.StringSlice(AppFlagAddEnvs)...)
 
 	// add self
 	if cmd.Bool(AppFlagAddSelf) {
-		a.state.AddROPaths(binPath)
+		state.AddROPaths(binPath)
 	}
 
 	// add deps
@@ -89,11 +92,11 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		if err != nil {
 			a.logger.Warn().Err(err).Msg("failed to add deps")
 		} else {
-			a.state.AddROPaths(deps...)
+			state.AddROPaths(deps...)
 		}
 	}
 
-	return a.runLoop(ctx, a.state)
+	return a.runLoop(ctx, state)
 }
 
 func (a *App) runLoop(ctx context.Context, state *State) error {
@@ -103,10 +106,27 @@ func (a *App) runLoop(ctx context.Context, state *State) error {
 			return fmt.Errorf("run: %w", err)
 		}
 
+		// press button
+		fmt.Printf("\nPress [Enter] to continue")
+		bufio.NewReader(os.Stdin).ReadByte()
+
 		// show menu
-		menu := menu.NewMenu(state.Journal.GetEvents())
-		if _, err := tea.NewProgram(menu).Run(); err != nil {
+		m := menu.NewMenu(state.Journal.GetEvents())
+		if _, err := tea.NewProgram(m).Run(); err != nil {
 			return fmt.Errorf("menu: %w", err)
+		}
+
+		// handle state
+		for _, item := range m.List.Items() {
+			item := item.(*menu.MenuItem)
+			if !item.Allow {
+				continue
+			}
+
+			if err := state.AllowEvent(item.Event); err != nil {
+				a.logger.Err(err).Any("event", item.Event).Msg("failed to allow event")
+				return fmt.Errorf("allow event: %w", err)
+			}
 		}
 	}
 }
@@ -117,7 +137,20 @@ func (a *App) run(ctx context.Context, state *State) error {
 
 	// create command
 	cmd := sandbox.CommandContext(ctx, state.Command[0], state.Command[1:]...)
-	cmd.Env = append(cmd.Env, a.state.EnvVars...)
+	cmd.Env = append(cmd.Env, state.EnvVars...)
+
+	// switch user
+	uid, err := strconv.Atoi(os.Getenv("SUDO_UID"))
+	if err != nil {
+		return fmt.Errorf("SUDO_UID environment variable is not set")
+	}
+	gid, err := strconv.Atoi(os.Getenv("SUDO_GID"))
+	if err != nil {
+		return fmt.Errorf("SUDO_GID environment variable is not set")
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},
+	}
 
 	// print debug
 	a.logger.Debug().Strs("cmd", cmd.Args[1:]).Strs("env", cmd.Env).Msg("run command")
@@ -132,7 +165,7 @@ func (a *App) run(ctx context.Context, state *State) error {
 
 	// run command
 	output, _ := cmd.CombinedOutput()
-	a.logger.Info().Msg(string(output))
+	fmt.Println(string(output))
 
 	// wait a bit
 	time.Sleep(time.Second)

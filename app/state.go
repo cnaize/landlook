@@ -1,10 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/cnaize/landbox"
+	"github.com/elastic/go-libaudit/v2/aucoalesce"
+
+	"github.com/cnaize/landlook/app/helper"
 	"github.com/cnaize/landlook/app/journal"
 )
 
@@ -19,6 +23,19 @@ type State struct {
 
 func NewState() *State {
 	return &State{}
+}
+
+func (s *State) AllowEvent(event *aucoalesce.Event) error {
+	switch helper.GetEventAction(event) {
+	case helper.EventActionRead, helper.EventActionExec:
+		s.AddROPaths(event.Data["path"])
+	case helper.EventActionWrite:
+		s.AddRWPaths(event.Data["path"])
+	default:
+		return fmt.Errorf("unknown action: %s", helper.GetEventAction(event))
+	}
+
+	return nil
 }
 
 func (s *State) AddROPaths(paths ...string) {

@@ -10,19 +10,19 @@ import (
 var _ list.Item = (*MenuItem)(nil)
 
 type MenuItem struct {
-	allow bool
-	event *aucoalesce.Event
+	Allow bool
+	Event *aucoalesce.Event
 }
 
 func NewMenuItem(allow bool, event *aucoalesce.Event) *MenuItem {
 	return &MenuItem{
-		allow: allow,
-		event: event,
+		Allow: allow,
+		Event: event,
 	}
 }
 
 func (i *MenuItem) Title() string {
-	if i.allow {
+	if i.Allow {
 		return "[ALLOW]"
 	}
 
@@ -30,7 +30,7 @@ func (i *MenuItem) Title() string {
 }
 
 func (i *MenuItem) Description() string {
-	return helper.FormatEventMenu(i.event)
+	return helper.FormatEventMenu(i.Event)
 
 }
 

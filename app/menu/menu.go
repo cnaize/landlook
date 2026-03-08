@@ -9,22 +9,22 @@ import (
 var _ tea.Model = (*Menu)(nil)
 
 type Menu struct {
-	list list.Model
+	List list.Model
 }
 
 func NewMenu(events []*aucoalesce.Event) *Menu {
 	items := make([]list.Item, len(events))
 	for i, event := range events {
 		items[i] = &MenuItem{
-			allow: false,
-			event: event,
+			Allow: false,
+			Event: event,
 		}
 	}
 
 	m := Menu{
-		list: list.New(items, list.NewDefaultDelegate(), 0, 0),
+		List: list.New(items, NewItemDelegate(), 0, 0),
 	}
-	m.list.Title = "Menu"
+	m.List.SetShowTitle(false)
 
 	return &m
 }
@@ -38,21 +38,23 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "space":
-			item := m.list.SelectedItem().(*MenuItem)
-			item.allow = !item.allow
+			if m.List.FilterState() != list.Filtering {
+				item := m.List.SelectedItem().(*MenuItem)
+				item.Allow = !item.Allow
+			}
 		case "ctrl+c":
 			return m, tea.Interrupt
 		}
 	case tea.WindowSizeMsg:
-		m.list.SetSize(msg.Width, msg.Height)
+		m.List.SetSize(msg.Width, msg.Height)
 	}
 
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	m.List, cmd = m.List.Update(msg)
 
 	return m, cmd
 }
 
 func (m *Menu) View() tea.View {
-	return tea.NewView(m.list.View())
+	return tea.NewView(m.List.View())
 }
