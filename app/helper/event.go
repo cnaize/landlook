@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -20,6 +21,7 @@ const (
 	EventActionSendSignals EventAction = "send signal"
 )
 
+// TODO: ADD OTHER ACTIONS!!!
 func GetEventAction(event *aucoalesce.Event) EventAction {
 	blockers := event.Data["blockers"]
 	switch {
@@ -51,4 +53,20 @@ func GetEventAction(event *aucoalesce.Event) EventAction {
 
 func CleanEvent(event *aucoalesce.Event) {
 	event.Warnings = nil
+}
+
+func FormatEventLog(event *aucoalesce.Event) string {
+	path := event.Data["path"]
+	blockers := event.Data["blockers"]
+
+	return fmt.Sprintf("[DENIED] %s (PID: %s) tried to %s %s (Reason: %s)",
+		event.Process.Exe, event.Process.PID, GetEventAction(event), path, blockers)
+}
+
+func FormatEventMenu(event *aucoalesce.Event) string {
+	path := event.Data["path"]
+	blockers := event.Data["blockers"]
+
+	return fmt.Sprintf("%s (PID: %s) %s %s (%s)",
+		event.Process.Exe, event.Process.PID, GetEventAction(event), path, blockers)
 }

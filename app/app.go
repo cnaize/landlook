@@ -142,11 +142,11 @@ func (a *App) run(ctx context.Context, state *State) error {
 	// switch user
 	uid, err := strconv.Atoi(os.Getenv("SUDO_UID"))
 	if err != nil {
-		return fmt.Errorf("SUDO_UID environment variable is not set")
+		return fmt.Errorf("parse SUDO_UID env: %w", err)
 	}
 	gid, err := strconv.Atoi(os.Getenv("SUDO_GID"))
 	if err != nil {
-		return fmt.Errorf("SUDO_GID environment variable is not set")
+		return fmt.Errorf("parse SUDO_GID env: %w", err)
 	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)},

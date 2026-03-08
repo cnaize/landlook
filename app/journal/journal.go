@@ -148,7 +148,7 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 
 	// save event
 	j.events = append(j.events, event)
-	j.logger.Info().Msg(helper.FormatEvent(event))
+	j.logger.Info().Msg(helper.FormatEventLog(event))
 }
 
 func (j *Journal) EventsLost(count int) {

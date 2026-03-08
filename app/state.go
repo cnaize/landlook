@@ -25,6 +25,7 @@ func NewState() *State {
 	return &State{}
 }
 
+// TODO: ADD OTHER ACTIONS!!!
 func (s *State) AllowEvent(event *aucoalesce.Event) error {
 	switch helper.GetEventAction(event) {
 	case helper.EventActionRead, helper.EventActionExec:

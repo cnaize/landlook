@@ -1,6 +1,8 @@
 package menu
 
 import (
+	"fmt"
+
 	"charm.land/bubbles/v2/list"
 	"github.com/elastic/go-libaudit/v2/aucoalesce"
 
@@ -35,5 +37,5 @@ func (i *MenuItem) Description() string {
 }
 
 func (i *MenuItem) FilterValue() string {
-	return i.Title() + i.Description()
+	return fmt.Sprintf("%s %s", i.Title(), i.Description())
 }
