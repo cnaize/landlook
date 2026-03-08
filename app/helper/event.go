@@ -32,7 +32,7 @@ func GetEventAction(event *aucoalesce.Event) EventAction {
 	case strings.Contains(blockers, "fs.read_file") || strings.Contains(blockers, "fs.read_dir"):
 		if event.Data["syscall"] == "openat" {
 			// check flags
-			flags, err := strconv.Atoi(event.Data["a2"])
+			flags, err := strconv.ParseUint(event.Data["a2"], 16, 64)
 			if err != nil {
 				return EventActionUnknown
 			}

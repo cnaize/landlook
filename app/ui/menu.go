@@ -3,6 +3,7 @@ package ui
 import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/elastic/go-libaudit/v2/aucoalesce"
 )
 
@@ -10,6 +11,7 @@ var _ tea.Model = (*Menu)(nil)
 
 type Menu struct {
 	List list.Model
+	main lipgloss.Style
 }
 
 func NewMenu(events []*aucoalesce.Event) *Menu {
@@ -23,8 +25,9 @@ func NewMenu(events []*aucoalesce.Event) *Menu {
 
 	m := Menu{
 		List: list.New(items, NewItemDelegate(), 0, 0),
+		main: lipgloss.NewStyle().Margin(0),
 	}
-	m.List.SetShowTitle(false)
+	m.List.Title = "Change Permissions"
 
 	return &m
 }
@@ -46,7 +49,8 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Interrupt
 		}
 	case tea.WindowSizeMsg:
-		m.List.SetSize(msg.Width, msg.Height)
+		h, v := m.main.GetFrameSize()
+		m.List.SetSize(msg.Width-h, msg.Height-v)
 	}
 
 	var cmd tea.Cmd
@@ -56,5 +60,8 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Menu) View() tea.View {
-	return tea.NewView(m.List.View())
+	view := tea.NewView(m.main.Render(m.List.View()))
+	view.AltScreen = true
+
+	return view
 }
