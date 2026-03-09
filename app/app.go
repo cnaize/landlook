@@ -47,8 +47,8 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	// set log level
 	logLevel, err := zerolog.ParseLevel(cmd.String(AppFlagLogLevel))
 	if err != nil {
-		a.logger.Warn().Str(AppFlagLogLevel, cmd.String(AppFlagLogLevel)).Msg(`invalid log level, setting to "debug"`)
-		logLevel = zerolog.DebugLevel
+		a.logger.Warn().Str(AppFlagLogLevel, cmd.String(AppFlagLogLevel)).Msg(`invalid log level, setting to "error"`)
+		logLevel = zerolog.ErrorLevel
 	}
 	a.logger = a.logger.Level(logLevel)
 
@@ -72,8 +72,6 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	// fill state
 	state := NewState()
 	state.Command = args
-	state.AddROPaths(strings.Split(cmd.String(AppFlagROPaths), ":")...)
-	state.AddRWPaths(strings.Split(cmd.String(AppFlagRWPaths), ":")...)
 	state.Options = landbox.Options{
 		TCPListen:   cmd.Uint16Slice(AppFlagTCPListen),
 		TCPConnect:  cmd.Uint16Slice(AppFlagTCPConnect),
@@ -81,6 +79,20 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		DenySignals: !cmd.Bool(AppFlagAllowSignals),
 		EnableDebug: true,
 	}
+
+	// ro paths
+	var roPaths []string
+	for _, path := range cmd.StringSlice(AppFlagROPaths) {
+		roPaths = append(roPaths, strings.Split(path, ":")...)
+	}
+	state.AddROPaths(roPaths...)
+
+	// rw paths
+	var rwPaths []string
+	for _, path := range cmd.StringSlice(AppFlagRWPaths) {
+		rwPaths = append(rwPaths, strings.Split(path, ":")...)
+	}
+	state.AddRWPaths(rwPaths...)
 
 	// add envs
 	state.AddEnvVars(cmd.StringSlice(AppFlagAddEnvs)...)
@@ -104,7 +116,9 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 }
 
 func (a *App) runLoop(ctx context.Context, state *State) error {
+	var num int
 	for {
+		func() { fmt.Println("============ Run:", num, "============"); num++ }()
 		// run command
 		if err := a.run(ctx, state); err != nil {
 			return fmt.Errorf("run command: %w", err)

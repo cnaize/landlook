@@ -13,6 +13,7 @@ var _ tea.Model = (*Menu)(nil)
 type Menu struct {
 	List list.Model
 	main lipgloss.Style
+	desc lipgloss.Style
 	keys map[string]key.Binding
 }
 
@@ -28,6 +29,7 @@ func NewMenu(events []*aucoalesce.Event) *Menu {
 	m := Menu{
 		List: list.New(items, NewItemDelegate(), 0, 0),
 		main: lipgloss.NewStyle().Margin(0),
+		desc: NewItemDelegate().Styles.SelectedDesc.Margin(0),
 		keys: map[string]key.Binding{
 			"cancel": key.NewBinding(
 				key.WithKeys("esc"),
@@ -70,6 +72,7 @@ func (m *Menu) Init() tea.Cmd {
 
 func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var oldWidth int
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if m.List.FilterState() == list.Filtering {
@@ -89,16 +92,36 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		h, v := m.main.GetFrameSize()
-		m.List.SetSize(msg.Width-h, msg.Height-v)
+		desc := m.desc.Width(msg.Width - h).Render(m.List.SelectedItem().(*MenuItem).Description())
+
+		oldWidth = m.List.Width()
+		m.List.SetSize(msg.Width-h, msg.Height-v-m.desc.GetVerticalFrameSize()-lipgloss.Height(desc))
 	}
 
+	oldItem := m.List.SelectedItem().(*MenuItem)
 	m.List, cmd = m.List.Update(msg)
+	newItem := m.List.SelectedItem().(*MenuItem)
+
+	if oldWidth != 0 {
+		oldDesc := m.desc.Width(oldWidth).Render(oldItem.Description())
+		newDesc := m.desc.Width(m.List.Width()).Render(newItem.Description())
+
+		m.List.SetHeight(m.List.Height() + lipgloss.Height(oldDesc) - lipgloss.Height(newDesc))
+	} else if oldItem != newItem {
+		oldDesc := m.desc.Width(m.List.Width()).Render(oldItem.Description())
+		newDesc := m.desc.Width(m.List.Width()).Render(newItem.Description())
+
+		m.List.SetHeight(m.List.Height() + lipgloss.Height(oldDesc) - (lipgloss.Height(newDesc)))
+	}
 
 	return m, cmd
 }
 
 func (m *Menu) View() tea.View {
-	view := tea.NewView(m.main.Render(m.List.View()))
+	item := m.List.SelectedItem().(*MenuItem)
+	desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(item.Description())
+
+	view := tea.NewView(m.main.Render(lipgloss.JoinVertical(lipgloss.Left, m.List.View(), desc)))
 	view.AltScreen = true
 
 	return view

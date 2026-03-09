@@ -28,47 +28,47 @@ func main() {
 			&cli.StringFlag{
 				Name:        app.AppFlagLogLevel,
 				Usage:       "set zerolog level",
-				Value:       "info",
-				DefaultText: "info",
+				Value:       "error",
+				DefaultText: "error",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:        app.AppFlagROPaths,
-				Usage:       "allow to read/exec path",
+				Usage:       "allow read/exec path",
 				DefaultText: "deny all",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:        app.AppFlagRWPaths,
-				Usage:       "allow to read/exec/write path",
+				Usage:       "allow read/exec/write path",
 				DefaultText: "deny all",
 			},
 			&cli.Uint16SliceFlag{
 				Name:        app.AppFlagTCPListen,
 				Aliases:     []string{"l"},
-				Usage:       "allow listen on tcp ports",
+				Usage:       "allow listen tcp port",
 				DefaultText: "deny all",
 			},
 			&cli.Uint16SliceFlag{
 				Name:        app.AppFlagTCPConnect,
 				Aliases:     []string{"c"},
-				Usage:       "allow connect to tcp ports",
+				Usage:       "allow connect tcp port",
 				DefaultText: "deny all",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAllowSockets,
-				Usage:       "allow abstract sockets",
+				Usage:       "allow open abstract sockets",
 				Value:       false,
 				DefaultText: "deny",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAllowSignals,
-				Usage:       "allow signals",
+				Usage:       "allow send signals",
 				Value:       false,
 				DefaultText: "deny",
 			},
 			&cli.StringSliceFlag{
 				Name:        app.AppFlagAddEnvs,
 				Aliases:     []string{"e"},
-				Usage:       "add environment variables",
+				Usage:       "add environment variable",
 				DefaultText: "empty list",
 			},
 			&cli.BoolFlag{

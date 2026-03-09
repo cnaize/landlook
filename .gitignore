@@ -27,6 +27,7 @@ go.work.sum
 
 # env file
 .env
+demo/pass.tape
 
 # Editor/IDE
 .idea/

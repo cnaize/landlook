@@ -37,7 +37,7 @@ func (s *State) AllowEvent(event *aucoalesce.Event) error {
 		s.AddTCPListenPorts(target)
 	case helper.EventActionTCPConnect:
 		s.AddTCPConnectPorts(target)
-	case helper.EventActionMakeSockets:
+	case helper.EventActionOpenSockets:
 		s.Options.DenySockets = false
 	case helper.EventActionSendSignals:
 		s.Options.DenySignals = false
