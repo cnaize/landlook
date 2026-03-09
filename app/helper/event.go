@@ -25,7 +25,7 @@ const (
 
 func GetEventAction(event *aucoalesce.Event) EventAction {
 	checkWriteFlags := func(flags string) bool {
-		bits, err := strconv.ParseUint(strings.TrimPrefix(flags, "0x"), 16, 64)
+		bits, err := strconv.ParseUint(flags, 16, 64)
 		if err != nil {
 			return false
 		}
@@ -43,11 +43,24 @@ func GetEventAction(event *aucoalesce.Event) EventAction {
 	sysCall := event.Data["syscall"]
 	blockers := event.Data["blockers"]
 	switch {
+	case strings.Contains(blockers, "net.bind_tcp"):
+		return EventActionTCPListen
+	case strings.Contains(blockers, "net.connect_tcp"):
+		return EventActionTCPConnect
+	case strings.Contains(blockers, "net.unix_socket"):
+		return EventActionMakeSockets
+	case strings.Contains(blockers, "signal.send"):
+		return EventActionSendSignals
 	case strings.Contains(blockers, "fs.execute"):
 		return EventActionExec
-	case strings.Contains(blockers, "fs.write_file") || strings.Contains(blockers, "fs.truncate"):
+	case strings.Contains(blockers, "fs.write_file"),
+		strings.Contains(blockers, "fs.truncate"),
+		strings.Contains(blockers, "fs.remove_file"),
+		strings.Contains(blockers, "fs.ioctl_dev"):
 		return EventActionWriteFile
-	case strings.Contains(blockers, "fs.make_"):
+	case strings.Contains(blockers, "fs.make_"),
+		strings.Contains(blockers, "fs.remove_dir"),
+		strings.Contains(blockers, "fs.refer"):
 		return EventActionWriteDir
 	case strings.Contains(blockers, "fs.read_file"):
 		if (sysCall == "open" || sysCall == "openat") && checkWriteFlags(event.Data["a2"]) {
@@ -59,17 +72,23 @@ func GetEventAction(event *aucoalesce.Event) EventAction {
 			return EventActionWriteDir
 		}
 		return EventActionReadDir
-	case strings.Contains(blockers, "net.bind_tcp"):
-		return EventActionTCPListen
-	case strings.Contains(blockers, "net.connect_tcp"):
-		return EventActionTCPConnect
-	case sysCall == "socket":
-		return EventActionMakeSockets
-	case sysCall == "kill" || sysCall == "tkill" || sysCall == "tgkill":
-		return EventActionSendSignals
 	}
 
 	return EventActionUnknown
+}
+
+func GetEventActionTarget(event *aucoalesce.Event) (EventAction, string) {
+	action := GetEventAction(event)
+	switch action {
+	case EventActionExec, EventActionReadDir, EventActionReadFile, EventActionWriteDir, EventActionWriteFile:
+		return action, event.Data["path"]
+	case EventActionTCPListen:
+		return action, event.Data["src"] + " port"
+	case EventActionTCPConnect:
+		return action, event.Data["dest"] + " port"
+	}
+
+	return EventActionUnknown, event.Data["syscall"]
 }
 
 func CleanEvent(event *aucoalesce.Event) {
@@ -77,17 +96,15 @@ func CleanEvent(event *aucoalesce.Event) {
 }
 
 func FormatEventLog(event *aucoalesce.Event) string {
-	path := event.Data["path"]
-	blockers := event.Data["blockers"]
+	action, target := GetEventActionTarget(event)
 
 	return fmt.Sprintf("[DENIED] %s (PID: %s) tried to %s %s (Reason: %s)",
-		event.Process.Exe, event.Process.PID, GetEventAction(event), path, blockers)
+		event.Process.Exe, event.Process.PID, action, target, event.Data["blockers"])
 }
 
 func FormatEventMenu(event *aucoalesce.Event) string {
-	path := event.Data["path"]
-	blockers := event.Data["blockers"]
+	action, target := GetEventActionTarget(event)
 
 	return fmt.Sprintf("%s (PID: %s) %s %s (%s)",
-		event.Process.Exe, event.Process.PID, GetEventAction(event), path, blockers)
+		event.Process.Exe, event.Process.PID, action, target, event.Data["blockers"])
 }

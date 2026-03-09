@@ -21,16 +21,16 @@ import (
 )
 
 const (
-	AppFlagLogLevel    = "log-level"
-	AppFlagROPaths     = "ro"
-	AppFlagRWPaths     = "rw"
-	AppFlagTCPListen   = "tcp-listen"
-	AppFlagTCPConnect  = "tcp-connect"
-	AppFlagDenySockets = "sockets"
-	AppFlagDenySignals = "signals"
-	AppFlagAddEnvs     = "env"
-	AppFlagAddSelf     = "add-self"
-	AppFlagAddDeps     = "add-deps"
+	AppFlagLogLevel     = "log-level"
+	AppFlagROPaths      = "ro"
+	AppFlagRWPaths      = "rw"
+	AppFlagTCPListen    = "tcp-listen"
+	AppFlagTCPConnect   = "tcp-connect"
+	AppFlagAllowSockets = "sockets"
+	AppFlagAllowSignals = "signals"
+	AppFlagAddEnvs      = "env"
+	AppFlagAddSelf      = "add-self"
+	AppFlagAddDeps      = "add-deps"
 )
 
 type App struct {
@@ -77,8 +77,8 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	state.Options = landbox.Options{
 		TCPListen:   cmd.Uint16Slice(AppFlagTCPListen),
 		TCPConnect:  cmd.Uint16Slice(AppFlagTCPConnect),
-		DenySockets: cmd.Bool(AppFlagDenySockets),
-		DenySignals: cmd.Bool(AppFlagDenySignals),
+		DenySockets: !cmd.Bool(AppFlagAllowSockets),
+		DenySignals: !cmd.Bool(AppFlagAllowSignals),
 		EnableDebug: true,
 	}
 

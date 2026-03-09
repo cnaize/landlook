@@ -54,13 +54,13 @@ func main() {
 				DefaultText: "deny all",
 			},
 			&cli.BoolFlag{
-				Name:        app.AppFlagDenySockets,
+				Name:        app.AppFlagAllowSockets,
 				Usage:       "allow to open abstract sockets",
 				Value:       false,
 				DefaultText: "deny",
 			},
 			&cli.BoolFlag{
-				Name:        app.AppFlagDenySignals,
+				Name:        app.AppFlagAllowSignals,
 				Usage:       "allow to send signals",
 				Value:       false,
 				DefaultText: "deny",

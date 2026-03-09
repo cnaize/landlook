@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/cnaize/landbox"
@@ -26,21 +27,22 @@ func NewState() *State {
 }
 
 func (s *State) AllowEvent(event *aucoalesce.Event) error {
-	switch helper.GetEventAction(event) {
+	action, target := helper.GetEventActionTarget(event)
+	switch action {
 	case helper.EventActionExec, helper.EventActionReadDir, helper.EventActionReadFile:
-		s.AddROPaths(event.Data["path"])
+		s.AddROPaths(target)
 	case helper.EventActionWriteDir, helper.EventActionWriteFile:
-		s.AddRWPaths(event.Data["path"])
+		s.AddRWPaths(target)
 	case helper.EventActionTCPListen:
-		// TODO: add tcp listen port here
+		s.AddTCPListenPorts(target)
 	case helper.EventActionTCPConnect:
-		// TODO: add tcp connect port here
+		s.AddTCPConnectPorts(target)
 	case helper.EventActionMakeSockets:
 		s.Options.DenySockets = false
 	case helper.EventActionSendSignals:
 		s.Options.DenySignals = false
 	default:
-		return fmt.Errorf("unknown action: %s", helper.GetEventAction(event))
+		return fmt.Errorf("invalid action: %s", helper.GetEventAction(event))
 	}
 
 	return nil
@@ -69,6 +71,30 @@ func (s *State) AddRWPaths(paths ...string) {
 
 			if !yield(path) {
 				return
+			}
+		}
+	})
+}
+
+func (s *State) AddTCPListenPorts(ports ...string) {
+	s.Options.TCPListen = slices.AppendSeq(s.Options.TCPListen, func(yield func(uint16) bool) {
+		for _, port := range ports {
+			if port, err := strconv.Atoi(port); err == nil {
+				if !yield(uint16(port)) {
+					return
+				}
+			}
+		}
+	})
+}
+
+func (s *State) AddTCPConnectPorts(ports ...string) {
+	s.Options.TCPConnect = slices.AppendSeq(s.Options.TCPConnect, func(yield func(uint16) bool) {
+		for _, port := range ports {
+			if port, err := strconv.Atoi(port); err == nil {
+				if !yield(uint16(port)) {
+					return
+				}
 			}
 		}
 	})

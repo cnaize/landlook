@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -111,7 +113,16 @@ func (j *Journal) Stop() error {
 }
 
 func (j *Journal) GetEvents() []*aucoalesce.Event {
-	return j.events
+	events := make(map[string]*aucoalesce.Event, len(j.events))
+	for _, event := range j.events {
+		action, target := helper.GetEventActionTarget(event)
+		evtkey := string(action) + target
+		if events[evtkey] == nil {
+			events[evtkey] = event
+		}
+	}
+
+	return slices.Collect(maps.Values(events))
 }
 
 func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
@@ -132,7 +143,7 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 	}
 
 	// filter event
-	if j.domain == "" || event.Data["domain"] != j.domain || event.Data["exit"] != "EACCES" {
+	if event.Type != 1423 || j.domain == "" || event.Data["domain"] != j.domain {
 		return
 	}
 
