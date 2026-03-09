@@ -25,13 +25,20 @@ func NewState() *State {
 	return &State{}
 }
 
-// TODO: ADD OTHER ACTIONS!!!
 func (s *State) AllowEvent(event *aucoalesce.Event) error {
 	switch helper.GetEventAction(event) {
-	case helper.EventActionRead, helper.EventActionExec:
+	case helper.EventActionExec, helper.EventActionReadDir, helper.EventActionReadFile:
 		s.AddROPaths(event.Data["path"])
-	case helper.EventActionWrite:
+	case helper.EventActionWriteDir, helper.EventActionWriteFile:
 		s.AddRWPaths(event.Data["path"])
+	case helper.EventActionTCPListen:
+		// TODO: add tcp listen port here
+	case helper.EventActionTCPConnect:
+		// TODO: add tcp connect port here
+	case helper.EventActionMakeSockets:
+		s.Options.DenySockets = false
+	case helper.EventActionSendSignals:
+		s.Options.DenySignals = false
 	default:
 		return fmt.Errorf("unknown action: %s", helper.GetEventAction(event))
 	}

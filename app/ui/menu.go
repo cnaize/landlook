@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -12,6 +13,7 @@ var _ tea.Model = (*Menu)(nil)
 type Menu struct {
 	List list.Model
 	main lipgloss.Style
+	keys map[string]key.Binding
 }
 
 func NewMenu(events []*aucoalesce.Event) *Menu {
@@ -26,26 +28,63 @@ func NewMenu(events []*aucoalesce.Event) *Menu {
 	m := Menu{
 		List: list.New(items, NewItemDelegate(), 0, 0),
 		main: lipgloss.NewStyle().Margin(0),
+		keys: map[string]key.Binding{
+			"cancel": key.NewBinding(
+				key.WithKeys("esc"),
+			),
+			"toggle": key.NewBinding(
+				key.WithKeys("space"),
+				key.WithHelp("space", "toggle"),
+			),
+			"run": key.NewBinding(
+				key.WithKeys("r"),
+				key.WithHelp("r", "run"),
+			),
+			"quit": key.NewBinding(
+				key.WithKeys("q", "ctrl+c"),
+			),
+		},
 	}
 	m.List.Title = "Change Permissions"
+	m.List.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			m.keys["toggle"],
+			m.keys["run"],
+		}
+	}
+	m.List.AdditionalFullHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			m.keys["toggle"],
+			m.keys["run"],
+		}
+	}
 
 	return &m
 }
 
 func (m *Menu) Init() tea.Cmd {
+	m.List.KeyMap.Quit.SetEnabled(false)
+
 	return nil
 }
 
 func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "space":
-			if m.List.FilterState() != list.Filtering {
-				item := m.List.SelectedItem().(*MenuItem)
-				item.Allow = !item.Allow
-			}
-		case "ctrl+c":
+		if m.List.FilterState() == list.Filtering {
+			break
+		}
+
+		switch {
+		case key.Matches(msg, m.keys["cancel"]) && m.List.FilterState() == list.Unfiltered:
+			return m, cmd
+		case key.Matches(msg, m.keys["toggle"]):
+			item := m.List.SelectedItem().(*MenuItem)
+			item.Allow = !item.Allow
+		case key.Matches(msg, m.keys["run"]):
+			return m, tea.Quit
+		case key.Matches(msg, m.keys["quit"]):
 			return m, tea.Interrupt
 		}
 	case tea.WindowSizeMsg:
@@ -53,7 +92,6 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.List.SetSize(msg.Width-h, msg.Height-v)
 	}
 
-	var cmd tea.Cmd
 	m.List, cmd = m.List.Update(msg)
 
 	return m, cmd

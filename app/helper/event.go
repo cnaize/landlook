@@ -12,40 +12,61 @@ type EventAction string
 
 const (
 	EventActionUnknown     EventAction = "unknown"
-	EventActionRead        EventAction = "read"
 	EventActionExec        EventAction = "exec"
-	EventActionWrite       EventAction = "write"
+	EventActionReadDir     EventAction = "read directory"
+	EventActionReadFile    EventAction = "read file"
+	EventActionWriteDir    EventAction = "write directory"
+	EventActionWriteFile   EventAction = "write file"
 	EventActionTCPListen   EventAction = "listen on"
 	EventActionTCPConnect  EventAction = "connect to"
 	EventActionMakeSockets EventAction = "create socket"
 	EventActionSendSignals EventAction = "send signal"
 )
 
-// TODO: ADD OTHER ACTIONS!!!
 func GetEventAction(event *aucoalesce.Event) EventAction {
+	checkWriteFlags := func(flags string) bool {
+		bits, err := strconv.ParseUint(strings.TrimPrefix(flags, "0x"), 16, 64)
+		if err != nil {
+			return false
+		}
+
+		if bits&0x3 != 0 || // O_ACCMODE
+			bits&0x40 != 0 || // O_CREAT
+			bits&0x200 != 0 || // O_TRUNC
+			bits&0x400 != 0 { // O_APPEND
+			return true
+		}
+
+		return false
+	}
+
+	sysCall := event.Data["syscall"]
 	blockers := event.Data["blockers"]
 	switch {
-	case strings.Contains(blockers, "fs.write_file") || strings.Contains(blockers, "fs.make_"):
-		return EventActionWrite
 	case strings.Contains(blockers, "fs.execute"):
 		return EventActionExec
-	case strings.Contains(blockers, "fs.read_file") || strings.Contains(blockers, "fs.read_dir"):
-		if event.Data["syscall"] == "openat" {
-			// check flags
-			flags, err := strconv.ParseUint(event.Data["a2"], 16, 64)
-			if err != nil {
-				return EventActionUnknown
-			}
-
-			if flags&0x1 != 0 || // O_WRONLY
-				flags&0x2 != 0 || // O_RDWR
-				flags&0x40 != 0 || // O_CREAT
-				flags&0x200 != 0 || // O_TRUNC
-				flags&0x400 != 0 { // O_APPEND
-				return EventActionWrite
-			}
+	case strings.Contains(blockers, "fs.write_file") || strings.Contains(blockers, "fs.truncate"):
+		return EventActionWriteFile
+	case strings.Contains(blockers, "fs.make_"):
+		return EventActionWriteDir
+	case strings.Contains(blockers, "fs.read_file"):
+		if (sysCall == "open" || sysCall == "openat") && checkWriteFlags(event.Data["a2"]) {
+			return EventActionWriteFile
 		}
-		return EventActionRead
+		return EventActionReadFile
+	case strings.Contains(blockers, "fs.read_dir"):
+		if (sysCall == "open" || sysCall == "openat") && checkWriteFlags(event.Data["a2"]) {
+			return EventActionWriteDir
+		}
+		return EventActionReadDir
+	case strings.Contains(blockers, "net.bind_tcp"):
+		return EventActionTCPListen
+	case strings.Contains(blockers, "net.connect_tcp"):
+		return EventActionTCPConnect
+	case sysCall == "socket":
+		return EventActionMakeSockets
+	case sysCall == "kill" || sysCall == "tkill" || sysCall == "tgkill":
+		return EventActionSendSignals
 	}
 
 	return EventActionUnknown

@@ -111,13 +111,13 @@ func (a *App) runLoop(ctx context.Context, state *State) error {
 		}
 
 		// show dialog
-		if _, err := tea.NewProgram(ui.NewDialog()).Run(); err != nil {
+		if _, err := tea.NewProgram(ui.NewDialog(), tea.WithContext(ctx)).Run(); err != nil {
 			return fmt.Errorf("run dialog: %w", err)
 		}
 
 		// show menu
 		menu := ui.NewMenu(state.Journal.GetEvents())
-		if _, err := tea.NewProgram(menu).Run(); err != nil {
+		if _, err := tea.NewProgram(menu, tea.WithContext(ctx)).Run(); err != nil {
 			return fmt.Errorf("run menu: %w", err)
 		}
 
