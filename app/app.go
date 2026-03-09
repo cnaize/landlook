@@ -60,7 +60,7 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 	// check app args
 	args := cmd.Args().Slice()
 	if len(args) < 1 {
-		return fmt.Errorf("missing command to run")
+		return fmt.Errorf("missing application to run")
 	}
 
 	// get binary path

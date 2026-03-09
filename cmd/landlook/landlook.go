@@ -22,8 +22,8 @@ func main() {
 
 	cli := &cli.Command{
 		Name:      "landlook",
-		Usage:     "command inspection tool",
-		ArgsUsage: "command [arguments]",
+		Usage:     "application inspection tool",
+		ArgsUsage: "application [arguments]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        app.AppFlagLogLevel,
@@ -38,30 +38,30 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        app.AppFlagRWPaths,
-				Usage:       "allow to read/write/exec path",
+				Usage:       "allow to read/exec/write path",
 				DefaultText: "deny all",
 			},
 			&cli.Uint16SliceFlag{
 				Name:        app.AppFlagTCPListen,
 				Aliases:     []string{"l"},
-				Usage:       "allow to listen tcp ports",
+				Usage:       "allow listen on tcp ports",
 				DefaultText: "deny all",
 			},
 			&cli.Uint16SliceFlag{
 				Name:        app.AppFlagTCPConnect,
 				Aliases:     []string{"c"},
-				Usage:       "allow to connect tcp ports",
+				Usage:       "allow connect to tcp ports",
 				DefaultText: "deny all",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAllowSockets,
-				Usage:       "allow to open abstract sockets",
+				Usage:       "allow abstract sockets",
 				Value:       false,
 				DefaultText: "deny",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAllowSignals,
-				Usage:       "allow to send signals",
+				Usage:       "allow signals",
 				Value:       false,
 				DefaultText: "deny",
 			},
@@ -73,13 +73,13 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAddSelf,
-				Usage:       fmt.Sprintf("add command itself to --%s", app.AppFlagROPaths),
+				Usage:       fmt.Sprintf("add application itself to --%s", app.AppFlagROPaths),
 				Value:       true,
 				DefaultText: "true",
 			},
 			&cli.BoolFlag{
 				Name:        app.AppFlagAddDeps,
-				Usage:       fmt.Sprintf("add command dependencies to --%s", app.AppFlagROPaths),
+				Usage:       fmt.Sprintf("add application dependencies to --%s", app.AppFlagROPaths),
 				Value:       true,
 				DefaultText: "true",
 			},

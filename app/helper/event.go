@@ -91,10 +91,6 @@ func GetEventActionTarget(event *aucoalesce.Event) (EventAction, string) {
 	return EventActionUnknown, event.Data["syscall"]
 }
 
-func CleanEvent(event *aucoalesce.Event) {
-	event.Warnings = nil
-}
-
 func FormatEventLog(event *aucoalesce.Event) string {
 	action, target := GetEventActionTarget(event)
 
@@ -107,4 +103,8 @@ func FormatEventMenu(event *aucoalesce.Event) string {
 
 	return fmt.Sprintf("%s (PID: %s) %s %s (%s)",
 		event.Process.Exe, event.Process.PID, action, target, event.Data["blockers"])
+}
+
+func CleanEvent(event *aucoalesce.Event) {
+	event.Warnings = nil
 }
