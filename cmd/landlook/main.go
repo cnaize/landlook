@@ -22,7 +22,7 @@ func main() {
 
 	cli := &cli.Command{
 		Name:      "landlook",
-		Usage:     "application inspection tool",
+		Usage:     "landlock security policy generator",
 		ArgsUsage: "application [arguments]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -30,6 +30,13 @@ func main() {
 				Usage:       "set zerolog level",
 				Value:       "error",
 				DefaultText: "error",
+			},
+			&cli.StringFlag{
+				Name:        app.AppFlagOutput,
+				Aliases:     []string{"o"},
+				Usage:       "output file",
+				Value:       "landlook.json",
+				DefaultText: "landlook.json",
 			},
 			&cli.StringSliceFlag{
 				Name:        app.AppFlagROPaths,

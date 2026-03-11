@@ -1,7 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,12 +17,13 @@ import (
 )
 
 type State struct {
+	Output  string `json:"-"`
 	Command []string
 	ROPaths landbox.Paths
 	RWPaths landbox.Paths
 	Options landbox.Options
 	EnvVars []string
-	Journal *journal.Journal
+	Journal *journal.Journal `json:"-"`
 }
 
 func NewState() *State {
@@ -112,4 +116,23 @@ func (s *State) AddEnvVars(envs ...string) {
 			}
 		}
 	})
+}
+
+func (s *State) Save(path string) error {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return fmt.Errorf("marshal: %w", err)
+	}
+
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+
+	output, err := exec.Command("chown", fmt.Sprintf("%s:%s", os.Getenv("SUDO_UID"), os.Getenv("SUDO_GID")), path).
+		CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("chown: %s", output)
+	}
+
+	return nil
 }

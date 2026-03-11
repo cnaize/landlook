@@ -1,8 +1,8 @@
-# Landlook - Application inspection tool
+# Landlook - Landlock security policy generator
 ![Landlook Demo](demo/demo.gif)
 
 ## How It Works
-**Landlook** executes your application in a strict **Landlock sandbox** and intercepts kernel audit events in real-time. Any blocked action (files, network, etc) pops up in an **interactive Terminal UI**, where you can instantly analyze the application's hidden requirements. By **iteratively restarting** the app and approving legitimate behaviors, you discover exactly what permissions the process needs to function, making it the ultimate tool for **security profiling** and **debugging** modern **Linux applications**.
+**Landlook** runs your application in a restricted **Landlock sandbox** and intercepts kernel audit events in real-time. When an action is blocked, it appears in an **interactive Terminal UI**, where you can instantly approve legitimate behaviors (file access, network calls, etc). Then you **iteratively restart** the app with the updated config, discovering deeper dependencies until you’ve built a perfect, **least-privilege security policy**.
 
 ## Requirements
  - Linux kernel `v6.15+` (for ABI v7 support)
@@ -21,13 +21,14 @@ sudo landlook -- ls -la /tmp
 ## Command-line options
 ```text
 NAME:
-   landlook - application inspection tool
+   landlook - landlock security policy generator
 
 USAGE:
    landlook [global options] application [arguments]
 
 GLOBAL OPTIONS:
    --log-level string                                           set zerolog level (default: error)
+   --output string, -o string                                   output file (default: landlook.json)
    --ro string [ --ro string ]                                  allow read/exec path (default: deny all)
    --rw string [ --rw string ]                                  allow read/exec/write path (default: deny all)
    --tcp-listen uint, -l uint [ --tcp-listen uint, -l uint ]    allow listen tcp port (default: deny all)
@@ -43,4 +44,3 @@ GLOBAL OPTIONS:
 ## Features
  - [x] Linux amd64 support
  - [ ] Linux arm64 support
- - [ ] Export profile to JSON/YAML

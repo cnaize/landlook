@@ -63,7 +63,7 @@ Require go
 Hide
 Set Theme "Dark+"
 Set Shell "bash"
-Set FontSize 22
+Set FontSize 20
 Set Width 1200
 Set Height 600
 
@@ -92,8 +92,10 @@ Sleep 3s
 
 Type "no" Sleep 2s Enter
 
+Type "cat landlook.json | jq" Sleep 2s Enter
+
 Sleep 3s
 
 # clean
 Hide
-Type "rm -rf landlook testdata" Enter
+Type "rm -rf landlook testdata landlook.json" Enter

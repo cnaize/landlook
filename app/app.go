@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,6 +23,7 @@ import (
 
 const (
 	AppFlagLogLevel     = "log-level"
+	AppFlagOutput       = "output"
 	AppFlagROPaths      = "ro"
 	AppFlagRWPaths      = "rw"
 	AppFlagTCPListen    = "tcp-listen"
@@ -112,7 +114,15 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		}
 	}
 
-	return a.runLoop(ctx, state)
+	// run loop
+	err = a.runLoop(ctx, state)
+
+	// save state
+	if cmd.String(AppFlagOutput) != "" && errors.Is(err, tea.ErrInterrupted) {
+		err = errors.Join(err, state.Save(cmd.String(AppFlagOutput)))
+	}
+
+	return err
 }
 
 func (a *App) runLoop(ctx context.Context, state *State) error {

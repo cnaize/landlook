@@ -15,6 +15,7 @@ type Menu struct {
 	main lipgloss.Style
 	desc lipgloss.Style
 	keys map[string]key.Binding
+	foot int
 }
 
 func NewMenu(events []*aucoalesce.Event) *Menu {
@@ -72,7 +73,6 @@ func (m *Menu) Init() tea.Cmd {
 
 func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
-	var oldWidth int
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if m.List.FilterState() == list.Filtering {
@@ -92,36 +92,52 @@ func (m *Menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		h, v := m.main.GetFrameSize()
-		desc := m.desc.Width(msg.Width - h).Render(m.List.SelectedItem().(*MenuItem).Description())
+		m.List.SetWidth(msg.Width - h)
 
-		oldWidth = m.List.Width()
-		m.List.SetSize(msg.Width-h, msg.Height-v-m.desc.GetVerticalFrameSize()-lipgloss.Height(desc))
+		if item, ok := m.List.SelectedItem().(*MenuItem); ok {
+			desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(item.Description())
+			m.foot = lipgloss.Height(desc)
+		} else {
+			m.foot = 0
+		}
+
+		m.List.SetHeight(msg.Height - v - m.foot)
 	}
 
-	oldItem := m.List.SelectedItem().(*MenuItem)
+	oldItem, _ := m.List.SelectedItem().(*MenuItem)
 	m.List, cmd = m.List.Update(msg)
-	newItem := m.List.SelectedItem().(*MenuItem)
+	newItem, _ := m.List.SelectedItem().(*MenuItem)
 
-	if oldWidth != 0 {
-		oldDesc := m.desc.Width(oldWidth).Render(oldItem.Description())
-		newDesc := m.desc.Width(m.List.Width()).Render(newItem.Description())
-
-		m.List.SetHeight(m.List.Height() + lipgloss.Height(oldDesc) - lipgloss.Height(newDesc))
-	} else if oldItem != newItem {
-		oldDesc := m.desc.Width(m.List.Width()).Render(oldItem.Description())
-		newDesc := m.desc.Width(m.List.Width()).Render(newItem.Description())
-
-		m.List.SetHeight(m.List.Height() + lipgloss.Height(oldDesc) - (lipgloss.Height(newDesc)))
+	switch {
+	case oldItem == nil && newItem == nil:
+		// skip
+	case oldItem == nil:
+		desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(newItem.Description())
+		m.foot = lipgloss.Height(desc)
+		m.List.SetHeight(m.List.Height() - m.foot)
+	case newItem == nil:
+		m.List.SetHeight(m.List.Height() + m.foot)
+		m.foot = 0
+	case newItem != oldItem:
+		desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(newItem.Description())
+		foot := lipgloss.Height(desc)
+		m.List.SetHeight(m.List.Height() + m.foot - foot)
+		m.foot = foot
 	}
 
 	return m, cmd
 }
 
 func (m *Menu) View() tea.View {
-	item := m.List.SelectedItem().(*MenuItem)
-	desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(item.Description())
+	if item, ok := m.List.SelectedItem().(*MenuItem); ok {
+		desc := m.desc.Width(m.List.Width() - m.desc.GetHorizontalFrameSize()).Render(item.Description())
+		view := tea.NewView(m.main.Render(lipgloss.JoinVertical(lipgloss.Left, m.List.View(), desc)))
+		view.AltScreen = true
 
-	view := tea.NewView(m.main.Render(lipgloss.JoinVertical(lipgloss.Left, m.List.View(), desc)))
+		return view
+	}
+
+	view := tea.NewView(m.List.View())
 	view.AltScreen = true
 
 	return view
