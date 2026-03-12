@@ -17,12 +17,12 @@ import (
 )
 
 type State struct {
-	Output  string `json:"-"`
-	Command []string
-	ROPaths landbox.Paths
-	RWPaths landbox.Paths
-	Options landbox.Options
-	EnvVars []string
+	Output  string           `json:"-"`
+	Command []string         `json:"command"`
+	ROPaths landbox.Paths    `json:"ro_paths,omitempty"`
+	RWPaths landbox.Paths    `json:"rw_paths,omitempty"`
+	Options landbox.Options  `json:"options"`
+	EnvVars []string         `json:"env_vars,omitempty"`
 	Journal *journal.Journal `json:"-"`
 }
 
