@@ -138,13 +138,12 @@ func (j *Journal) ReassemblyComplete(msgs []*auparse.AuditMessage) {
 	helper.CleanEvent(event)
 
 	// find domain
-	ppid := strconv.Itoa(os.Getpid())
-	if j.domain == "" && event.Process.PPID == ppid {
+	if j.domain == "" && event.Process.PPID == strconv.Itoa(os.Getpid()) {
 		j.domain = event.Data["domain"]
 	}
 
 	// filter event
-	if event.Type != 1423 || j.domain == "" || event.Data["domain"] != j.domain || event.Process.PPID != ppid {
+	if event.Type != 1423 || j.domain == "" || event.Data["domain"] != j.domain {
 		return
 	}
 

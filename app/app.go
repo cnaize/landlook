@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
@@ -128,10 +129,22 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 func (a *App) runLoop(ctx context.Context, state *State) error {
 	var num int
 	for {
-		func() { fmt.Println("============ Run:", num, "============"); num++ }()
-		// run command
-		if err := a.run(ctx, state); err != nil {
-			return fmt.Errorf("run command: %w", err)
+		if err := func() error {
+			fmt.Println("============ Run:", num, "============")
+			num++
+
+			// make context
+			ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+			defer stop()
+
+			// run command
+			if err := a.run(ctx, state); err != nil {
+				return fmt.Errorf("run command: %w", err)
+			}
+
+			return nil
+		}(); err != nil {
+			return err
 		}
 
 		// show dialog

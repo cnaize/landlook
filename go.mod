@@ -5,8 +5,7 @@ go 1.26
 require (
 	charm.land/bubbles/v2 v2.0.0
 	charm.land/bubbletea/v2 v2.0.2
-	charm.land/lipgloss/v2 v2.0.1
-	github.com/appleboy/graceful v1.3.0
+	charm.land/lipgloss/v2 v2.0.2
 	github.com/cnaize/landbox v0.3.1
 	github.com/elastic/go-libaudit/v2 v2.6.2
 	github.com/rs/zerolog v1.34.0

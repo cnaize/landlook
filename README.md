@@ -1,8 +1,8 @@
-# Landlook - Landlock security policy generator
+# Landlook — Interactive Landlock profiler
 ![Landlook Demo](demo/demo.gif)
 
 ## How It Works
-**Landlook** runs your application in a restricted **Landlock sandbox** and intercepts kernel audit events in real-time. When an action is blocked, it appears in an **interactive Terminal UI**, where you can instantly approve legitimate behaviors (file access, network calls, etc). Then you **iteratively restart** the app with the updated config, discovering deeper dependencies until you’ve built a perfect, **least-privilege security policy**.
+**Landlook** runs your application in a restricted **Landlock sandbox** and intercepts kernel audit events in real-time. When an action is blocked, it appears in an **interactive Terminal UI**, where you can instantly approve legitimate behaviors (file access, network calls, etc). Then you **iteratively restart** the app with the updated profile, discovering deeper dependencies until you’ve built a perfect, **least-privilege security policy**.
 
 ## Requirements
  - Linux kernel `v6.15+` (for ABI v7 support)
@@ -21,7 +21,7 @@ sudo landlook -- ls -la /tmp
 ## Command-line options
 ```text
 NAME:
-   landlook - landlock security policy generator
+   landlook - interactive landlock profiler
 
 USAGE:
    landlook [global options] application [arguments]

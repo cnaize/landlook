@@ -91,6 +91,7 @@ Type "r"
 Sleep 3s
 
 Type "no" Sleep 2s Enter
+Sleep 1s
 
 Type "cat landlook.json | jq" Sleep 2s Enter
 

@@ -7,7 +7,6 @@ import (
 	"os"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/appleboy/graceful"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v3"
 
@@ -22,7 +21,7 @@ func main() {
 
 	cli := &cli.Command{
 		Name:      "landlook",
-		Usage:     "landlock security policy generator",
+		Usage:     "interactive landlock profiler",
 		ArgsUsage: "application [arguments]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -96,18 +95,7 @@ func main() {
 		},
 	}
 
-	m := graceful.NewManagerWithContext(ctx, graceful.WithLogger(graceful.NewEmptyLogger()))
-	m.AddRunningJob(func(ctx context.Context) error {
-		defer cancel()
-
-		return cli.Run(ctx, os.Args)
-	})
-
-	<-m.Done()
-
-	for _, err := range m.Errors() {
-		if !errors.Is(err, tea.ErrInterrupted) {
-			logger.Err(err).Msg("failed to run app")
-		}
+	if err := cli.Run(ctx, os.Args); err != nil && !errors.Is(err, tea.ErrInterrupted) {
+		logger.Err(err).Msg("failed to run")
 	}
 }

@@ -29,6 +29,7 @@ func (d *Dialog) Init() tea.Cmd {
 }
 
 func (d *Dialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
@@ -40,11 +41,10 @@ func (d *Dialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return d, tea.Interrupt
 			}
 		case "ctrl+c":
-			return d, tea.Interrupt
+			return d, cmd
 		}
 	}
 
-	var cmd tea.Cmd
 	d.input, cmd = d.input.Update(msg)
 
 	return d, cmd
