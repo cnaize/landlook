@@ -113,11 +113,23 @@ func (j *Journal) Stop() error {
 }
 
 func (j *Journal) GetEvents() []*aucoalesce.Event {
+	key := func(action helper.EventAction, target string) string {
+		return string(action) + target
+	}
+
 	events := make(map[string]*aucoalesce.Event, len(j.events))
 	for _, event := range j.events {
 		action, target := helper.GetEventActionTarget(event)
-		evtkey := string(action) + target
-		if events[evtkey] == nil {
+		evtkey := key(action, target)
+		switch action {
+		case helper.EventActionExec:
+			delete(events, key(helper.EventActionReadFile, target))
+			events[evtkey] = event
+		case helper.EventActionReadFile:
+			if _, ok := events[key(helper.EventActionExec, target)]; !ok {
+				events[evtkey] = event
+			}
+		default:
 			events[evtkey] = event
 		}
 	}

@@ -63,7 +63,7 @@ Require go
 Hide
 Set Theme "Dark+"
 Set Shell "bash"
-Set FontSize 20
+Set FontSize 22
 Set Width 1200
 Set Height 600
 
@@ -74,28 +74,26 @@ Type "cd /tmp" Enter
 Type "clear" Enter
 Show
 
-Type "sudo ./landlook -- ls -la /tmp/testdata" Sleep 2s Enter
-Source demo/pass.tape
-Sleep 2s Enter
+Type "sudo ./landlook -- ls -la /tmp/testdata" Sleep 1s Enter
+Source demo/pass.tape Sleep 1s Enter
 
-Sleep 3s
+Sleep 2s
 
-Type "yes" Sleep 2s Enter
+Type "yes" Sleep 1s Enter
 
-Sleep 3s
-Type "/" Sleep 2s
-Type "testdata" Sleep 2s Enter
-Space Sleep 3s
+Sleep 2s
+Type "/"
+Type "testdata" Sleep 1s Enter
+Space Sleep 2s
 Type "r"
 
-Sleep 3s
+Sleep 2s
 
-Type "no" Sleep 2s Enter
-Sleep 1s
+Type "no" Sleep 1s Enter
 
-Type "cat landlook.json | jq" Sleep 2s Enter
+Type "cat landlook.json | jq" Sleep 1s Enter
 
-Sleep 3s
+Sleep 2s
 
 # clean
 Hide
