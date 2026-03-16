@@ -36,23 +36,24 @@ func NewJournal(logger zerolog.Logger) *Journal {
 }
 
 func (j *Journal) Start(ctx context.Context) error {
+	var err error
 	// create client
-	client, err := libaudit.NewMulticastAuditClient(nil)
+	j.client, err = libaudit.NewMulticastAuditClient(nil)
 	if err != nil {
-		client, err = libaudit.NewAuditClient(nil)
+		j.client, err = libaudit.NewAuditClient(nil)
 		if err != nil {
 			return fmt.Errorf("new client: %w", err)
 		}
 
-		if err := client.SetEnabled(true, libaudit.WaitForReply); err != nil {
-			return fmt.Errorf("set enabled: %w", err)
-		}
-
-		if err := client.SetPID(libaudit.WaitForReply); err != nil {
+		if err := j.client.SetPID(libaudit.WaitForReply); err != nil {
 			return fmt.Errorf("set pid: %w", err)
 		}
 	}
-	j.client = client
+
+	// enable audit
+	if err := j.client.SetEnabled(true, libaudit.NoWait); err != nil {
+		return fmt.Errorf("set enabled: %w", err)
+	}
 
 	// create reassembler
 	j.reasmr, err = libaudit.NewReassembler(32, 3*time.Second, j)
@@ -75,7 +76,7 @@ func (j *Journal) Start(ctx context.Context) error {
 				}
 			default:
 				// receive message
-				raw, err := client.Receive(false)
+				raw, err := j.client.Receive(false)
 				if err != nil {
 					return
 				}
