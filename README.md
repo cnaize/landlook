@@ -9,6 +9,7 @@
  - `sudo` (for Netlink Audit only)
 
 ## Installation
+Download from [Releases](https://github.com/cnaize/landlook/releases) or install via Go
 ```bash
 go install github.com/cnaize/landlook/cmd/landlook@latest
 ```

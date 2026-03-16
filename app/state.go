@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strconv"
 	"strings"
@@ -119,19 +118,28 @@ func (s *State) AddEnvVars(envs ...string) {
 }
 
 func (s *State) Save(path string) error {
+	// write file
 	data, err := json.Marshal(s)
 	if err != nil {
-		return fmt.Errorf("marshal: %w", err)
+		return fmt.Errorf("marshal state: %w", err)
 	}
 
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 
-	output, err := exec.Command("chown", fmt.Sprintf("%s:%s", os.Getenv("SUDO_UID"), os.Getenv("SUDO_GID")), path).
-		CombinedOutput()
+	// change owner
+	uid, err := strconv.Atoi(os.Getenv("SUDO_UID"))
 	if err != nil {
-		return fmt.Errorf("chown: %s", output)
+		return fmt.Errorf("parse SUDO_UID: %w", err)
+	}
+	gid, err := strconv.Atoi(os.Getenv("SUDO_GID"))
+	if err != nil {
+		return fmt.Errorf("parse SUDO_GID: %w", err)
+	}
+
+	if err := os.Chown(path, uid, gid); err != nil {
+		return fmt.Errorf("chown file: %w", err)
 	}
 
 	return nil

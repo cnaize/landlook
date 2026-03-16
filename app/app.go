@@ -83,14 +83,14 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 		EnableDebug: true,
 	}
 
-	// ro paths
+	// add ro paths
 	var roPaths []string
 	for _, path := range cmd.StringSlice(AppFlagROPaths) {
 		roPaths = append(roPaths, strings.Split(path, ":")...)
 	}
 	state.AddROPaths(roPaths...)
 
-	// rw paths
+	// add rw paths
 	var rwPaths []string
 	for _, path := range cmd.StringSlice(AppFlagRWPaths) {
 		rwPaths = append(rwPaths, strings.Split(path, ":")...)
@@ -129,22 +129,16 @@ func (a *App) Run(ctx context.Context, cmd *cli.Command) error {
 func (a *App) runLoop(ctx context.Context, state *State) error {
 	var num int
 	for {
-		if err := func() error {
-			fmt.Println("============ Run:", num, "============")
-			num++
+		fmt.Println("============ Run:", num, "============")
+		num++
 
-			// make context
+		if err := func() error {
 			ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 			defer stop()
 
-			// run command
-			if err := a.run(ctx, state); err != nil {
-				return fmt.Errorf("run command: %w", err)
-			}
-
-			return nil
+			return a.run(ctx, state)
 		}(); err != nil {
-			return err
+			return fmt.Errorf("run command: %w", err)
 		}
 
 		// show dialog
